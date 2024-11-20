@@ -1,107 +1,142 @@
-var express = require("express");
-let app = express();
+const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const PropertiesReader = require("properties-reader");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
+const app = express();
 app.use(cors());
 app.use(express.json());
-app.set('json spaces', 3);
-const path = require('path');
-let PropertiesReader = require("properties-reader");
+app.set("json spaces", 3);
+
 // Load properties from the file
-let propertiesPath = path.resolve(__dirname, "./dbconnection.properties");
-let properties = PropertiesReader(propertiesPath);
+const propertiesPath = path.resolve(__dirname, "./dbconnection.properties");
+const properties = PropertiesReader(propertiesPath);
 
 // Extract values from the properties file
-const dbPrefix = properties.get('db.prefix');
-const dbHost = properties.get('db.host');
-const dbName = properties.get('db.name');
-const dbUser = properties.get('db.user');
-const dbPassword = properties.get('db.password');
-const dbParams = properties.get('db.params');
+const dbPrefix = properties.get("db.prefix");
+const dbHost = properties.get("db.host");
+const dbName = properties.get("db.name");
+const dbUser = properties.get("db.user");
+const dbPassword = properties.get("db.password");
+const dbParams = properties.get("db.params");
 
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-// MongoDB connection URL
-const uri = `${dbPrefix}${dbUser}:${dbPassword}${dbHost}${dbParams}`;
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// Construct MongoDB connection URL
+const uri = `${dbPrefix}${dbUser}:${encodeURIComponent(dbPassword)}${dbHost}${dbParams}`;
+
+// Create a MongoClient with options to set the Stable API version
 const client = new MongoClient(uri, { serverApi: ServerApiVersion.v1 });
 
-let db1;//declare variable
+let db1; // Declare variable to hold the database reference
+
+// Serve static files from the current directory
 app.use(express.static(path.join(__dirname)));
 
+// Connect to MongoDB
 async function connectDB() {
   try {
-    client.connect();
-    console.log('Connected to MongoDB');
-    db1 = client.db('Kitten');
+    await client.connect(); // Await the connection
+    console.log("Connected to MongoDB");
+    db1 = client.db(dbName); // Dynamically use dbName from properties
   } catch (err) {
-    console.error('MongoDB connection error:', err);
+    console.error("MongoDB connection error:", err);
+    process.exit(1); // Exit the process if unable to connect
   }
 }
 
+connectDB(); // Call the connectDB function
 
-connectDB(); //call the connectDB function to connect to MongoDB database
-
-//Optional if you want the get the collection name from the Fetch API in test3.html then
-app.param('collectionName', async function(req, res, next, collectionName) { 
+// Middleware to set collection based on the route
+app.param("collectionName", async function (req, res, next, collectionName) {
+  try {
     req.collection = db1.collection(collectionName);
-    /*Check the collection name for debugging if error */
-    console.log('Middleware set collection:', req.collection.collectionName);
+    console.log("Middleware set collection:", req.collection.collectionName);
     next();
-});
-
-// Ensure this route is defined after the middleware app.param
-// get all data from our collection in Mongodb
-// get all data from our collection in Mongodb
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/collections/:collectionName', async function(req, res, next) {
-  try{
-    const results = await req.collection.find({}).toArray();
-
-    console.log('Retrived data:', results);
-
-    res.json(results);
-
+  } catch (err) {
+    console.error("Error in collection middleware:", err);
+    res.status(500).json({ error: "Invalid collection name" });
   }
-  catch(err){
-    console.error('Error fetching docs', err.message);
-    next(err); 
+});
+
+// Reference the Lessons collection
+function lessonsCollection() {
+  return db1.collection("Lessons");
 }
-    
+
+// GET all lessons
+app.get("/Kitten/Lessons", async (req, res) => {
+  try {
+    const results = await lessonsCollection().find({}).toArray();
+    console.log("Retrieved data:", results);
+    res.json(results); // Send the lessons to the frontend
+  } catch (err) {
+    console.error("Error fetching lessons:", err);
+    res.status(500).json({ error: "Failed to fetch lessons" });
+  }
 });
 
+// POST a new lesson
+app.post("/Kitten/Lessons", async (req, res) => {
+  try {
+    const lesson = req.body;
+    const result = await lessonsCollection().insertOne(lesson);
 
-app.get('/collections1/:collectionName', async function(req, res, next) {
- 
+    res.status(201).json({
+      ...lesson,
+      _id: result.insertedId,
+    });
+  } catch (err) {
+    console.error("Error adding lesson:", err);
+    res.status(500).json({ error: "Failed to add lesson" });
+  }
 });
 
-app.get('/collections/:collectionName/:max/:sortAspect/:sortAscDesc', async function(req, res, next){
-    
+// PUT (Update) a lesson by ID
+app.put("/Kitten/Lessons/:id", async (req, res) => {
+  try {
+    const updatedLesson = req.body;
+    const result = await lessonsCollection().updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updatedLesson }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Lesson not found" });
+    }
+
+    res.json({ message: "Lesson updated successfully" });
+  } catch (err) {
+    console.error("Error updating lesson:", err);
+    res.status(500).json({ error: "Failed to update lesson" });
+  }
 });
 
-app.get('/collections/:collectionName/:id' , async function(req, res, next) {
-    
+// DELETE a lesson by ID
+app.delete("/Kitten/Lessons/:id", async (req, res) => {
+  try {
+    const result = await lessonsCollection().deleteOne({
+      _id: new ObjectId(req.params.id),
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "Lesson not found" });
+    }
+
+    res.json({ message: "Lesson deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting lesson:", err);
+    res.status(500).json({ error: "Failed to delete lesson" });
+  }
 });
 
-app.post('/collections/:collectionName', async function(req, res, next) {
-    
-});
-
-app.delete('/collections/:collectionName/:id', async function(req, res, next) {
-    
-});
-
-app.put('/collections/:collectionName/:id', async function(req, res, next) {
-
-});
-
+// Global error handler
 app.use((err, req, res, next) => {
-    console.error('Global error handler:', err);
-    res.status(500).json({ error: 'An error occurred' });
+  console.error("Global error handler:", err);
+  res.status(500).json({ error: "An internal server error occurred" });
 });
 
 // Start the server
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
-  });
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
