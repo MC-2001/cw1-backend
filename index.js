@@ -5,7 +5,12 @@ const PropertiesReader = require("properties-reader");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "https://mc-2001.github.io",
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type"
+}));
+
 app.use(express.json());
 app.set("json spaces", 3);
 
@@ -29,7 +34,7 @@ const client = new MongoClient(uri, { serverApi: ServerApiVersion.v1 });
 
 let db1; // Declare variable to hold the database reference
 
-// Serve static files from the current directory
+// Serve static files from the current directory // Middleware
 app.use(express.static(path.join(__dirname)));
 
 // Connect to MongoDB
@@ -64,15 +69,20 @@ function lessonsCollection() {
 }
 
 // GET all lessons
-app.get("/Kitten/Lessons", async (req, res) => {
+app.get("/Kitten/Lessons/:id", async (req, res) => {
   try {
-    const results = await lessonsCollection().find({}).toArray();
-    console.log("Retrieved data:", results);
-    res.json(results); // Send the lessons to the frontend
+    const lessonId = req.params.id;
+    const lesson = await lessonsCollection().findOne({ _id: new ObjectId(lessonId) });
+
+    if (lesson) {
+      res.json(lesson);
+    } else {
+      res.status(404).json({ error: "Lesson not found" });
+    }
   } catch (err) {
-    console.error("Error fetching lessons:", err);
-    res.status(500).json({ error: "Failed to fetch lessons" });
-  }
+    console.error("Error fetching lesson by ID:", err);
+    res.status(500).json({ error: "Failed to fetch lesson" });
+  }
 });
 
 // POST a new lesson
