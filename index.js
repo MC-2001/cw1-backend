@@ -69,6 +69,18 @@ function lessonsCollection() {
 }
 
 // GET all lessons
+app.get("/Kitten/Lessons", async (req, res) => {
+  try {
+    const results = await lessonsCollection().find({}).toArray();
+    console.log("Retrieved data:", results);
+    res.json(results); // Send the lessons to the frontend
+  } catch (err) {
+    console.error("Error fetching lessons:", err);
+    res.status(500).json({ error: "Failed to fetch lessons" });
+  }
+});
+
+// GET lessons by ID
 app.get("/Kitten/Lessons/:id", async (req, res) => {
   try {
     const lessonId = req.params.id;
