@@ -138,7 +138,7 @@ app.put("/Kitten/Lessons/:id", async (req, res) => {
 app.delete("/Kitten/Lessons/:id", async (req, res) => {
   try {
     const result = await lessonsCollection().deleteOne({
-      _id: new ObjectId(req.params.id), // Match the lesson by its ID.
+      _id: new ObjectId(req.params.id), // Match the lesson by its ID
     });
 
     if (result.deletedCount === 0) {
