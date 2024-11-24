@@ -4,7 +4,7 @@ const path = require("path"); // Import the Path module to handle file paths.
 const PropertiesReader = require("properties-reader"); // Import the PropertiesReader library to read .properties files.
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb"); // Import MongoDB utilities to interact with the database.
 
-const app = express(); // Create an Express application instance.
+const app = express(); // Create an Express application instance
 
 app.use(cors({ // Enable CORS with specified configurations.
   origin: "https://mc-2001.github.io", // Allow requests only from this specific domain.
