@@ -33,7 +33,7 @@ const uri = `${dbPrefix}${dbUser}:${encodeURIComponent(dbPassword)}${dbHost}${db
 // Create a MongoClient with options to set the Stable API version.
 const client = new MongoClient(uri, { serverApi: ServerApiVersion.v1 }); // Initialize MongoDB client with API version.
 
-let db1; // Declare a variable to store the database reference.
+let db1; // Declare a variable to store the database reference// Kitten
 
 // Serve static files from the current directory.
 app.use(express.static(path.join(__dirname))); // Serve files in the server's directory as static assets.
