@@ -91,22 +91,34 @@ const validateOrder = (order) => {
 
 // POST an order.
 app.post("/Kitten/Orders", async (req, res) => {
-  const error = validateOrder(req.body);
-  if (error) return res.status(400).json({ error }); // Bad Request for invalid data.
+  const { name, phone, items, total, date } = req.body;
+
+  if (!name || !phone || !items || items.length === 0) {
+    return res.status(400).json({ error: "Invalid order data" });
+  }
 
   try {
-    const order = req.body;
-    const result = await ordersCollection().insertOne(order);
+    // Map items into the desired structure for the database
+    const orders = items.map((item) => ({
+      lessonId: item.lessonId, // Ensure lessonId is present in each item
+      customerName: name,
+      quantity: 1, // Assuming 1 quantity per item (adjust if needed)
+      total,
+      date,
+    }));
+
+    const result = await ordersCollection().insertMany(orders); // Save all items at once
 
     res.status(201).json({
-      ...order,
-      _id: result.insertedId,
+      message: "Order placed successfully",
+      insertedIds: result.insertedIds,
     });
   } catch (err) {
     console.error("Error adding order:", err);
     res.status(500).json({ error: "Failed to add order" });
   }
 });
+
 
 // GET all lessons.
 app.get("/Kitten/Lessons", async (req, res) => {
