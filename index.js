@@ -116,36 +116,22 @@ app.post("/Kitten/Lessons/:id", async (req, res) => {
 
 app.put("/Kitten/Lessons/:id", async (req, res) => {
   try {
-    const { lessons } = req.body; // Extract lessons data from the request body.
+    const updatedLesson = req.body; // Extract the updated lesson data from the request body.
+    const result = await lessonsCollection().updateOne(
+      { _id: new ObjectId(req.params.id) }, // Match the lesson by its ID.
+      { $set: updatedLesson } // Update the lesson with the new data.
+    );
 
-    // Validate the request body
-    if (!lessons || !Array.isArray(lessons)) {
-      return res.status(400).json({ error: "Invalid or missing lessons data" });
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Lesson not found" }); // Return 404 if no matching lesson is found.
     }
 
-    // Update availability for each lesson
-    for (const lesson of lessons) {
-      if (!lesson.id || !lesson.quantity) {
-        return res.status(400).json({ error: "Each lesson must have an id and quantity" });
-      }
-
-      const result = await lessonsCollection().updateOne(
-        { _id: new ObjectId(lesson.id) }, // Match the lesson by its ID.
-        { $inc: { availableSlots: -lesson.quantity } } // Decrease the available slots.
-      );
-
-      if (result.matchedCount === 0) {
-        console.warn(`Lesson with ID "${lesson.id}" not found`); // Warn if the lesson is not found.
-      }
-    }
-
-    res.status(200).json({ message: "Lesson availability updated successfully" });
+    res.json({ message: "Lesson updated successfully" }); // Return success message.
   } catch (err) {
-    console.error("Error updating lesson availability:", err); // Log errors
-    res.status(500).json({ error: "Failed to update lesson availability" });
+    console.error("Error updating lesson:", err); // Log errors while updating the lesson.
+    res.status(500).json({ error: "Failed to update lesson" }); // Return an error response.
   }
 });
-
 
 
 // DELETE a lesson by ID
