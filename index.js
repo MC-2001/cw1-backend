@@ -6,7 +6,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb"); // Impor
 
 const app = express(); // Create an Express application instance
 
-app.use(cors({ // Enable CORS with specified configurations.
+app.use(cors({ // Enable CORS with specified configurations
   origin: "https://mc-2001.github.io", // Allow requests only from this specific domain.
   methods: "GET,POST,PUT,DELETE", // Specify allowed HTTP methods.
   allowedHeaders: "Content-Type" // Specify allowed headers in requests.
