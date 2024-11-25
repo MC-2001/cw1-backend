@@ -99,7 +99,7 @@ app.get("/Kitten/Lessons/:id", async (req, res) => {
 });
 
 // POST a new lesson
-app.post("/Kitten/Lessons", async (req, res) => {
+app.post("/Kitten/Lessons/:id", async (req, res) => {
   try {
     const lesson = req.body; // Extract the lesson details from the request body.
     const result = await lessonsCollection().insertOne(lesson); // Insert the new lesson into the collection.
@@ -114,7 +114,7 @@ app.post("/Kitten/Lessons", async (req, res) => {
   }
 });
 
-app.put("/Kitten/Lessons/update-availability", async (req, res) => {
+app.put("/Kitten/Lessons/:id", async (req, res) => {
   try {
     const { lessons } = req.body; // Extract lessons data from the request body.
 
@@ -145,6 +145,7 @@ app.put("/Kitten/Lessons/update-availability", async (req, res) => {
     res.status(500).json({ error: "Failed to update lesson availability" });
   }
 });
+
 
 
 // DELETE a lesson by ID
