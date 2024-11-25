@@ -114,25 +114,44 @@ app.post("/Kitten/Lessons", async (req, res) => {
   }
 });
 
-// PUT (Update) a lesson by ID
-app.put("/Kitten/Lessons/:id", async (req, res) => {
+// PUT (Update) endpoint to modify availability of multiple lessons
+app.put("/Kitten/Lessons/update-availability", async (req, res) => {
   try {
-    const updatedLesson = req.body; // Extract the updated lesson data from the request body.
-    const result = await lessonsCollection().updateOne(
-      { _id: new ObjectId(req.params.id) }, // Match the lesson by its ID.
-      { $set: updatedLesson } // Update the lesson with the new data.
-    );
+    const { lessons } = req.body; // Extract lessons data from the request body.
 
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: "Lesson not found" }); // Return 404 if no matching lesson is found.
+    // Validate that lessons is an array
+    if (!Array.isArray(lessons)) {
+      return res.status(400).json({ error: "Invalid or missing lessons data" });
     }
 
-    res.json({ message: "Lesson updated successfully" }); // Return success message.
+    // Loop through each lesson to update its availability
+    for (const { id, quantity } of lessons) {
+      // Ensure each lesson has an ID and quantity
+      if (!id || !quantity) {
+        return res.status(400).json({ error: "Each lesson must have an id and quantity" });
+      }
+
+      // Update the lesson's available slots by decrementing with quantity
+      const result = await lessonsCollection().updateOne(
+        { _id: new ObjectId(id) }, // Match lesson by its ID
+        { $inc: { availableSlots: -quantity } } // Decrement available slots
+      );
+
+      // Log a warning if no matching lesson is found
+      if (!result.matchedCount) console.warn(`Lesson with ID "${id}" not found`);
+    }
+
+    // Respond with a success message if all updates are processed
+    res.json({ message: "Lesson availability updated successfully" });
   } catch (err) {
-    console.error("Error updating lesson:", err); // Log errors while updating the lesson.
-    res.status(500).json({ error: "Failed to update lesson" }); // Return an error response.
+    // Log any errors encountered during the process
+    console.error("Error updating lesson availability:", err);
+
+    // Respond with a server error status
+    res.status(500).json({ error: "Failed to update lesson availability" });
   }
 });
+
 
 // DELETE a lesson by ID
 app.delete("/Kitten/Lessons/:id", async (req, res) => {
