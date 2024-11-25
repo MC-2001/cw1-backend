@@ -114,40 +114,34 @@ app.post("/Kitten/Lessons", async (req, res) => {
   }
 });
 
-// PUT (Update) endpoint to modify availability of multiple lessons
 app.put("/Kitten/Lessons/update-availability", async (req, res) => {
   try {
     const { lessons } = req.body; // Extract lessons data from the request body.
 
-    // Validate that lessons is an array
-    if (!Array.isArray(lessons)) {
+    // Validate the request body
+    if (!lessons || !Array.isArray(lessons)) {
       return res.status(400).json({ error: "Invalid or missing lessons data" });
     }
 
-    // Loop through each lesson to update its availability
-    for (const { id, quantity } of lessons) {
-      // Ensure each lesson has an ID and quantity
-      if (!id || !quantity) {
+    // Update availability for each lesson
+    for (const lesson of lessons) {
+      if (!lesson.id || !lesson.quantity) {
         return res.status(400).json({ error: "Each lesson must have an id and quantity" });
       }
 
-      // Update the lesson's available slots by decrementing with quantity
       const result = await lessonsCollection().updateOne(
-        { _id: new ObjectId(id) }, // Match lesson by its ID
-        { $inc: { availableSlots: -quantity } } // Decrement available slots
+        { _id: new ObjectId(lesson.id) }, // Match the lesson by its ID.
+        { $inc: { availableSlots: -lesson.quantity } } // Decrease the available slots.
       );
 
-      // Log a warning if no matching lesson is found
-      if (!result.matchedCount) console.warn(`Lesson with ID "${id}" not found`);
+      if (result.matchedCount === 0) {
+        console.warn(`Lesson with ID "${lesson.id}" not found`); // Warn if the lesson is not found.
+      }
     }
 
-    // Respond with a success message if all updates are processed
-    res.json({ message: "Lesson availability updated successfully" });
+    res.status(200).json({ message: "Lesson availability updated successfully" });
   } catch (err) {
-    // Log any errors encountered during the process
-    console.error("Error updating lesson availability:", err);
-
-    // Respond with a server error status
+    console.error("Error updating lesson availability:", err); // Log errors
     res.status(500).json({ error: "Failed to update lesson availability" });
   }
 });
