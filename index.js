@@ -96,7 +96,7 @@ const validateOrder = (order) => {
   return null; // Return null if validation passes.
 };
 
-// POST request handler to create a new order.
+// POST-ORDER request handler to create a new order.
 app.post("/Kitten/Orders", async (req, res) => {
   const { name, phone, items, total, date } = req.body;
 
